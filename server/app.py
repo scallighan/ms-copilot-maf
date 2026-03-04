@@ -43,6 +43,6 @@ async def on_message(context: TurnContext, _):
 
 if __name__ == "__main__":
     try:
-        start_server(AGENT_APP, {})
+        start_server(AGENT_APP, CONNECTION_MANAGER.get_default_connection_configuration())
     except Exception as error:
         raise error
