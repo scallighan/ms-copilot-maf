@@ -2,6 +2,7 @@ from microsoft_agents.activity import load_configuration_from_env
 from microsoft_agents.authentication.msal import MsalConnectionManager
 from microsoft_agents.hosting.core import (
    AgentApplication,
+   Authorization,
    TurnState,
    TurnContext,
    MemoryStorage,
@@ -11,7 +12,7 @@ from os import environ
 from .server import start_server
 
 agents_sdk_config = load_configuration_from_env(environ)
-
+print(f"Loaded configuration: {agents_sdk_config}")
 # Create storage and connection manager
 STORAGE = MemoryStorage()
 CONNECTION_MANAGER = MsalConnectionManager(**agents_sdk_config)

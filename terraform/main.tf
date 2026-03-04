@@ -212,6 +212,20 @@ resource "azurerm_container_app" "bot" {
         value = "graph"
       }
 
+      # new for M365 Agent SDK
+      env {
+        name = "CONNECTIONS__SERVICE_CONNECTION__SETTINGS__TENANTID"
+        value = data.azurerm_client_config.current.tenant_id
+      }
+      env {
+        name = "CONNECTIONS__SERVICE_CONNECTION__SETTINGS__CLIENTID"
+        value = azurerm_user_assigned_identity.bot.client_id
+      }
+      env {
+        name = "AGENTAPPLICATION__USERAUTHORIZATION__HANDLERS__GRAPH__SETTINGS__AZUREBOTOAUTHCONNECTIONNAME"
+        value = "graph"
+      }
+
     }
     http_scale_rule {
       name                = "http-1"
