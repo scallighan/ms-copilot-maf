@@ -1,1 +1,3 @@
 microsoft-agents-hosting-aiohttp
+cryptography
+microsoft-agents-authentication-msal

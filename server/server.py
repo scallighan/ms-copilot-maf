@@ -12,6 +12,8 @@ from aiohttp.web import Request, Response, Application, run_app, middleware, jso
 async def headers_middlware(request: Request, handler):
    headers = request.headers
    print(f"Received request with headers: {headers}")
+   auth_config: AgentAuthConfiguration = request.app["agent_configuration"]
+   print(f"Using auth configuration: {auth_config}")
    return await handler(request)
 
 def start_server(
@@ -26,7 +28,7 @@ def start_server(
             adapter,
       )
 
-   APP = Application(middlewares=[headers_middlware,jwt_authorization_middleware])
+   APP = Application(middlewares=[headers_middlware, jwt_authorization_middleware])
    APP.router.add_post("/api/messages", entry_point)
    APP.router.add_get("/api/messages", lambda _: Response(status=200))
    APP["agent_configuration"] = auth_configuration
