@@ -1,0 +1,55 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.23/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.23",
+  "id": "${{TEAMS_APP_ID}}",
+  "version": "1.0.1",
+  "developer": {
+    "name": "scallighan",
+    "websiteUrl": "https://github.com/scallighan/ms-copilot-maf",
+    "privacyUrl": "https://github.com/scallighan/ms-copilot-maf",
+    "termsOfUseUrl": "https://github.com/scallighan/ms-copilot-maf"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "ms-copilot-maf",
+    "full": "Copilot Multi-Agent Framework Demo"
+  },
+  "description": {
+    "short": "Interact with the Multi-Agent Framework",
+    "full": "Interact with the Multi-Agent Framework"
+  },
+  "accentColor": "#FFFFFF",
+  "copilotAgents": { 
+    "customEngineAgents": [ 
+        { 
+            "id": "${{BOT_ID}}", 
+            "type": "bot" 
+        } 
+    ]
+  },
+  "bots": [
+    {
+      "botId": "${{BOT_ID}}",
+      "scopes": ["personal", "team"],
+      "isNotificationOnly": false,
+      "supportsCalling": false,
+      "supportsVideo": false,
+      "supportsFiles": false
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "${{BOT_DOMAIN}}",
+    "*.botframework.com"
+  ],
+  "webApplicationInfo": {
+    "id": "${{BOT_ID}}",
+    "resource": "api://botid-${{BOT_ID}}"
+  }
+}

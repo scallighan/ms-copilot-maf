@@ -6,8 +6,13 @@ from microsoft_agents.hosting.aiohttp import (
    jwt_authorization_middleware,
    CloudAdapter,
 )
-from aiohttp.web import Request, Response, Application, run_app
+from aiohttp.web import Request, Response, Application, run_app, middleware, json_response
 
+@middleware
+async def headers_middlware(request: Request, handler):
+   headers = request.headers
+   print(f"Received request with headers: {headers}")
+   return await handler(request)
 
 def start_server(
    agent_application: AgentApplication, auth_configuration: AgentAuthConfiguration
@@ -21,7 +26,7 @@ def start_server(
             adapter,
       )
 
-   APP = Application(middlewares=[jwt_authorization_middleware])
+   APP = Application(middlewares=[headers_middlware,jwt_authorization_middleware])
    APP.router.add_post("/api/messages", entry_point)
    APP.router.add_get("/api/messages", lambda _: Response(status=200))
    APP["agent_configuration"] = auth_configuration
@@ -29,6 +34,6 @@ def start_server(
    APP["adapter"] = agent_application.adapter
 
    try:
-      run_app(APP, host="localhost", port=environ.get("PORT", 3978))
+      run_app(APP, host="0.0.0.0", port=environ.get("PORT", 3978))
    except Exception as error:
       raise error

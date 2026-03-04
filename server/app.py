@@ -25,6 +25,7 @@ AGENT_APP.message("/help")(_help)
 
 @AGENT_APP.activity("message")
 async def on_message(context: TurnContext, _):
+    print(f"Received message: {context.activity.text}")
     await context.send_activity(f"you said: {context.activity.text}")
 
 if __name__ == "__main__":

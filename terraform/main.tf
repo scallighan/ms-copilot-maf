@@ -56,7 +56,7 @@ resource "azurerm_virtual_network" "default" {
   name                = "vnet-${local.func_name}-${local.loc_for_naming}"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  address_space       = ["172.20.0.0/16"]
+  address_space       = ["172.21.0.0/16"]
 
   tags = local.tags
 }
@@ -65,14 +65,14 @@ resource "azurerm_subnet" "default" {
   name                 = "default-subnet-${local.loc_for_naming}"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.default.name
-  address_prefixes     = ["172.20.0.0/24"]
+  address_prefixes     = ["172.21.0.0/24"]
 }
 
 resource "azurerm_subnet" "cluster" {
   name                 = "cluster-subnet-${local.loc_for_naming}"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.default.name
-  address_prefixes     = ["172.20.1.0/24"]
+  address_prefixes     = ["172.21.1.0/24"]
 
   delegation {
     name = "Microsoft.App/environments"
@@ -89,7 +89,7 @@ resource "azurerm_subnet" "pe" {
   name                 = "pe-subnet-${local.loc_for_naming}"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.default.name
-  address_prefixes     = ["172.20.2.0/24"]
+  address_prefixes     = ["172.21.2.0/24"]
 }
 
 resource "azurerm_key_vault" "kv" {
@@ -164,7 +164,7 @@ resource "azurerm_container_app_environment" "this" {
   }
 }
 
-resource "azurerm_container_app" "a2a" {
+resource "azurerm_container_app" "bot" {
   name                         = "aca-${local.func_name}"
   container_app_environment_id = azurerm_container_app_environment.this.id
   resource_group_name          = azurerm_resource_group.rg.name
@@ -173,45 +173,45 @@ resource "azurerm_container_app" "a2a" {
 
   template {
     container {
-      name   = "a2a"
+      name   = "bot"
       image  = "ghcr.io/${var.gh_repo}:latest"
       cpu    = 0.5
-      memory = "1.0Gi"
+      memory = "1Gi"
 
       env {
-        name  = "AZURE_SUBSCRIPTION_ID"
-        value = data.azurerm_client_config.current.subscription_id
+        name = "RUNNING_ON_AZURE"
+        value = "1"
       }
+
       env {
-        name  = "AZURE_TENANT_ID"
+        name = "TENANT_ID"
         value = data.azurerm_client_config.current.tenant_id
+      }
 
+      env {
+        name = "CLIENT_ID"
+        value = azurerm_user_assigned_identity.bot.client_id
       }
       env {
-        name  = "AZURE_CLIENT_ID"
+        name = "tenantId"
+        value = data.azurerm_client_config.current.tenant_id
+      }
+
+      env {
+        name = "clientId"
+        value = azurerm_user_assigned_identity.bot.client_id
+      }
+
+      env {
+        name = "AZURE_CLIENT_ID"
         value = azurerm_user_assigned_identity.this.client_id
       }
-      env {
-        name  = "COPILOTSTUDIOAGENT__ENVIRONMENTID"
-        value = var.COPILOTSTUDIOAGENT__ENVIRONMENTID
+
+      env{
+        name = "graph_connectionName"
+        value = "graph"
       }
-      env {
-        name  = "COPILOTSTUDIOAGENT__SCHEMANAME"
-        value = var.COPILOTSTUDIOAGENT__SCHEMANAME
-      }
-      env {
-        name  = "COPILOTSTUDIOAGENT__AGENTAPPID"
-        value = var.COPILOTSTUDIOAGENT__AGENTAPPID
-      }
-      env {
-        name  = "COPILOTSTUDIOAGENT__TENANTID"
-        value = data.azurerm_client_config.current.tenant_id
-      }
-      env {
-        name  = "COPILOTSTUDIOAGENT__CLIENTSECRET"
-        value = var.COPILOTSTUDIOAGENT__CLIENTSECRET
-      }
-      
+
     }
     http_scale_rule {
       name                = "http-1"
@@ -224,7 +224,7 @@ resource "azurerm_container_app" "a2a" {
   ingress {
     allow_insecure_connections = false
     external_enabled           = true
-    target_port                = 8000
+    target_port                = 3978
     transport                  = "auto"
     traffic_weight {
       latest_revision = true
@@ -234,11 +234,51 @@ resource "azurerm_container_app" "a2a" {
 
   identity {
     type = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.this.id]
+    identity_ids = [azurerm_user_assigned_identity.this.id, azurerm_user_assigned_identity.bot.id]
   }
   tags = local.tags
 
   lifecycle {
     ignore_changes = [ secret ]
+  }
+}
+
+resource "azurerm_user_assigned_identity" "bot" {
+  location            = azurerm_resource_group.rg.location
+  name                = "uai-bot-${local.func_name}"
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+resource "azurerm_bot_service_azure_bot" "teamsbot" {
+  name                = "bot-${local.func_name}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = "global"
+  microsoft_app_id    = azurerm_user_assigned_identity.bot.client_id
+  sku                 = "F0"
+  endpoint            = "https://${azurerm_container_app.bot.ingress[0].fqdn}/api/messages"
+  microsoft_app_msi_id = azurerm_user_assigned_identity.bot.id
+  microsoft_app_tenant_id = data.azurerm_client_config.current.tenant_id
+  microsoft_app_type  = "UserAssignedMSI"
+  tags = local.tags
+}
+
+resource "azurerm_bot_channel_ms_teams" "teams" {
+  bot_name            = azurerm_bot_service_azure_bot.teamsbot.name
+  location            = azurerm_bot_service_azure_bot.teamsbot.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+
+resource "azurerm_bot_connection" "graph" {
+  name                  = "graph"
+  bot_name              = azurerm_bot_service_azure_bot.teamsbot.name
+  location              = azurerm_bot_service_azure_bot.teamsbot.location
+  resource_group_name   = azurerm_resource_group.rg.name
+  service_provider_name = "Aadv2"
+  client_id             = azuread_application.teams-sso.client_id
+  client_secret         = azuread_application_password.this.value
+  scopes = "openid profile User.Read"
+  parameters = {
+    tenantId = data.azurerm_client_config.current.tenant_id
   }
 }
