@@ -28,12 +28,13 @@ AGENT_APP = AgentApplication[TurnState](
 async def _help(context: TurnContext, _: TurnState):
     await context.send_activity(
         "Welcome to the Echo Agent sample 🚀. "
-        "Type /help for help or send a message to see the echo feature in action."
+        "Type 'help' for help or send a message to see the echo feature in action."
     )
 
 AGENT_APP.conversation_update("membersAdded")(_help)
 
-AGENT_APP.message("/help")(_help)
+AGENT_APP.message("help")(_help)
+AGENT_APP.message("Help")(_help)
 
 
 @AGENT_APP.activity("message")

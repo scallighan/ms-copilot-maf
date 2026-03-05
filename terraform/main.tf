@@ -222,6 +222,11 @@ resource "azurerm_container_app" "bot" {
         value = azurerm_user_assigned_identity.bot.client_id
       }
       env {
+        name = "CONNECTIONS__SERVICE_CONNECTION__SETTINGS__AUTHTYPE"
+        value = "UserManagedIdentity"
+      }
+      
+      env {
         name = "AGENTAPPLICATION__USERAUTHORIZATION__HANDLERS__GRAPH__SETTINGS__AZUREBOTOAUTHCONNECTIONNAME"
         value = "graph"
       }
